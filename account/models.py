@@ -54,3 +54,10 @@ class User(AbstractUser, SoftDeleteBaseModel):
     REQUIRED_FIELDS = []
 
     objects = CustomManager()
+
+
+class RecycleUser(User):
+    deleted_object = BaseUserManager()
+
+    class Meta:
+        proxy = True
