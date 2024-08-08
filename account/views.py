@@ -51,18 +51,18 @@ class CheckUserPhone(CustomAPIView):
         serializer.is_valid(raise_exception=True)
         phone = get_phone_from_serializer(serializer)
 
-        user = User.objects.filter(phone=phone)
+        user = User.objects.filter(phone=phone).values("is_active", "password")
 
         if user.exists():
             user_obj = user.get()
             add_request_to_throttle(request, self)
             add_request_to_throttle(request, self, phone)
-            if not user_obj.password:
+            if not user_obj.get("password"):
                 response = Response(
                     {"message": [UserSituation.NO_PASSWORD_FOUND.value]},
                     status=status.HTTP_403_FORBIDDEN,
                 )
-            elif not user_obj.is_active:
+            elif not user_obj.get("is_active"):
                 response = Response(
                     {"message": [UserSituation.INACTIVE_USER.value]},
                     status=status.HTTP_403_FORBIDDEN,
