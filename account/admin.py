@@ -2,15 +2,17 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 
-from . import models
+from .models import RecycleUser, User
+
 
 # Register your models here.
 
 
+@admin.register(User)
 class CustomUserAdmin(UserAdmin):
     add_form = UserCreationForm
     form = UserChangeForm
-    model = models.User
+    model = User
     list_display = (
         "phone",
         "email",
@@ -63,4 +65,14 @@ class CustomUserAdmin(UserAdmin):
     ordering = []
 
 
-admin.site.register(models.User, CustomUserAdmin)
+@admin.register(RecycleUser)
+class RecycleUserAdmin(admin.ModelAdmin):
+    actions = ["restore_deleted_items"]
+    list_display = (
+        "phone",
+        "deleted_at",
+    )
+
+    def get_queryset(self, request):
+        return RecycleUser.deleted_object.filter(is_deleted=True)
+
