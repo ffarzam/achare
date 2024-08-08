@@ -43,7 +43,14 @@ class SoftQuerySet(QuerySet):
         self._result_cache = None
 
 
-class CustomManager(BaseUserManager):
+class SoftDeleteManager(Manager):
+    def get_queryset(self):
+        return SoftQuerySet(self.model, self._db).filter(
+            Q(is_deleted=False) | Q(is_deleted__isnull=True)
+        )
+
+
+class CustomManager(SoftDeleteManager, BaseUserManager):
     def create_user(self, phone, password):
         if not phone:
             raise ValueError("Users must have an phone")
