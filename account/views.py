@@ -45,9 +45,7 @@ class CheckUserPhone(CustomAPIView):
     serializer_class = CheckUserPhoneSerializer
 
     def post(self, request):
-        serializer = self.serializer_class(
-            data=request.data, context=self.get_serializer_context()
-        )
+        serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         phone = get_phone_from_serializer(serializer)
 
