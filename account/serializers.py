@@ -15,7 +15,7 @@ class PhoneSerializer(serializers.Serializer):
     )
 
 
-class CheckUserPhoneSerializer(IsValidMixin, PhoneSerializer):
+class CheckUserPhoneSerializer(PhoneSerializer):
     pass
 
 
