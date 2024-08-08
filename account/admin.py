@@ -76,3 +76,6 @@ class RecycleUserAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return RecycleUser.deleted_object.filter(is_deleted=True)
 
+    @admin.action(description="Restore Deleted Items")
+    def restore_deleted_items(self, request, queryset):
+        queryset.update(is_deleted=False, deleted_at=None)
