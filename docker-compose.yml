@@ -1,0 +1,86 @@
+services:
+
+
+  postgres:
+    container_name: postgres
+    image: postgres:14.0
+    environment:
+      POSTGRES_USER: ${USER}
+      POSTGRES_PASSWORD: ${PASSWORD}
+      POSTGRES_DB: ${NAME}
+    networks:
+      - main
+    ports:
+      - 5432:5432
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: app
+    volumes:
+      - .:/code/
+    networks:
+      - main
+    depends_on:
+      - postgres
+      - redis
+    ports:
+      - 8000:8000
+    restart: always
+
+  redis:
+    container_name: redis
+    image: redis:7.2
+    networks:
+      - main
+    ports:
+      - 6379:6379
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  elasticsearch:
+    image: elasticsearch:8.10.1
+    container_name: elasticsearch
+    mem_limit: 1g
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    environment:
+      discovery.type: single-node
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      xpack.security.enabled: 'false'
+      network.bind_host: 0.0.0.0
+      network.host: 0.0.0.0
+    ports:
+      - 9200:9200
+    networks:
+      - main
+    restart: always
+
+  kibana:
+    image: kibana:8.10.1
+    container_name: kibana
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+    networks:
+      - main
+    restart: always
+    volumes:
+      - kibana_data:/usr/share/kibana/data
+
+
+
+networks:
+  main:
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:
+  kibana_data:
+
+

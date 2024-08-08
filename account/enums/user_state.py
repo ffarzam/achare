@@ -1,0 +1,13 @@
+from enum import Enum
+
+
+class UserSituation(Enum):
+    LOGIN_REQUIRED = 1
+    REGISTER_REQUIRED = 2
+    WRONG_OTP = 3
+    OTP_EXPIRED = 4
+    WRONG_PASSWORD_OR_PHONE = 5
+    LOGOUT_CHOSEN_ACCOUNT = 6
+    LOGOUT_ALL_ACCOUNTS = 7
+    INACTIVE_USER = 8
+    NO_PASSWORD_FOUND = 9

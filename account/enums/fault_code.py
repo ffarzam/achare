@@ -1,0 +1,8 @@
+from enum import Enum
+
+
+class FaultCode(Enum):
+    SMS_PROVIDER_FAILURE = 0
+    INVALID_PHONE_NUMBER_PATTERN = 22
+    WRONG_PHONE_NUMBER = 33
+    INVALID_PASSWORD = 44
