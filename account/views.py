@@ -12,9 +12,7 @@ from account.authentication import (
     WorkFlowTokenAuthentication,
 )
 from account.core.check_user_phone import (
-    generate_otp_and_send,
     get_phone_from_serializer,
-    save_otp_inside_cache,
 )
 from account.core.login import get_username_and_password_from_serializer
 from account.core.register import (
@@ -31,6 +29,7 @@ from account.core.tokens import (
 from account.custom_view import CustomAPIView
 from account.enums.fault_code import FaultCode
 from account.enums.user_state import UserSituation
+from account.mixins import SendOTPMixin
 from account.models import User
 from account.permissions.active_user import IsActiveUser
 from account.permissions.password_permissions import IsPasswordSet
@@ -44,7 +43,7 @@ from account.serializers import (
 from account.utils import add_request_to_throttle
 
 
-class CheckUserPhone(CustomAPIView):
+class CheckUserPhone(CustomAPIView, SendOTPMixin):
     custom_throttle_scope = "check_phone"
     serializer_class = CheckUserPhoneSerializer
 
@@ -53,60 +52,54 @@ class CheckUserPhone(CustomAPIView):
         serializer.is_valid(raise_exception=True)
         phone = get_phone_from_serializer(serializer)
 
-        user = User.default_objects.filter(phone=phone).values(
-            "is_active", "password", "is_deleted"
+        user = (
+            User.default_objects.filter(phone=phone)
+            .values("is_active", "password", "is_deleted")
+            .first()
         )
-        send_opt = False
-        response = None
-        if user.exists():
-            user_obj = user.get()
-            add_request_to_throttle(request, self)
-            add_request_to_throttle(request, self, phone)
-            if user_obj.get("is_deleted"):
-                response = Response(
-                    {"message": [UserSituation.DELETED_ACCOUNT.value]},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
 
-            elif not user_obj.get("password") and not user_obj.get("is_active"):
-                send_opt = True
-                response = Response(
-                    {"message": [UserSituation.NO_PASSWORD_FOUND.value]},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            elif not user_obj.get("is_active"):
-                response = Response(
-                    {"message": [UserSituation.INACTIVE_USER.value]},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-            else:
-                response = Response(
-                    {"message": [UserSituation.LOGIN_REQUIRED.value]},
-                    status=status.HTTP_200_OK,
-                )
+        if not user:
+            return self.handle_new_user(phone, request)
 
-        else:
-            send_opt = True
+        if user.get("is_deleted"):
+            return self.respond_with_status(
+                UserSituation.DELETED_ACCOUNT.value, status.HTTP_403_FORBIDDEN
+            )
 
-        if send_opt:
-            sms_provider_result, code = generate_otp_and_send(phone)
-            if sms_provider_result:
-                save_otp_inside_cache(phone, code)
+        if not user.get("password") and not user.get("is_active"):
+            return self.handle_no_password_user(phone, request)
 
-                add_request_to_throttle(request, self)
-                add_request_to_throttle(request, self, phone)
-                if not response:
-                    response = Response(
-                        {"message": [UserSituation.REGISTER_REQUIRED.value]},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
-            else:
-                response = Response(
-                    {"message": [FaultCode.SMS_PROVIDER_FAILURE.value]},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+        if not user.get("is_active"):
+            return self.respond_with_status(
+                UserSituation.INACTIVE_USER.value, status.HTTP_403_FORBIDDEN
+            )
 
-        return response
+        return self.respond_with_status(
+            UserSituation.LOGIN_REQUIRED.value, status.HTTP_200_OK
+        )
+
+    def handle_new_user(self, phone, request):
+        if self.send_otp(phone, request):
+            return self.respond_with_status(
+                UserSituation.REGISTER_REQUIRED.value, status.HTTP_404_NOT_FOUND
+            )
+        return self.fail_otp_response()
+
+    def handle_no_password_user(self, phone, request):
+        if self.send_otp(phone, request):
+            return self.respond_with_status(
+                UserSituation.NO_PASSWORD_FOUND.value, status.HTTP_403_FORBIDDEN
+            )
+        return self.fail_otp_response()
+
+    def fail_otp_response(self):
+        return self.respond_with_status(
+            FaultCode.SMS_PROVIDER_FAILURE.value, status.HTTP_400_BAD_REQUEST
+        )
+
+    @staticmethod
+    def respond_with_status(message, status_code):
+        return Response({"message": [message]}, status=status_code)
 
 
 class UserRegister(CustomAPIView):
