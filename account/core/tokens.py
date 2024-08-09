@@ -50,15 +50,16 @@ def generate_refresh_token(user_id: int, jti: str) -> str:
     return refresh_token
 
 
-def generate_work_flow_token(phone: str) -> str:
-    refresh_token_payload = {
+def generate_work_flow_token(phone: str, jti: str) -> str:
+    work_flow_token_payload = {
         "token_type": "work_flow",
         "phone": phone,
         "exp": datetime.datetime.utcnow()
         + datetime.timedelta(seconds=settings.REDIS_WORK_FLOW_TTL),
         "iat": datetime.datetime.utcnow(),
+        "jti": jti,
     }
-    refresh_token = encode_jwt(refresh_token_payload)
+    refresh_token = encode_jwt(work_flow_token_payload)
     return refresh_token
 
 
@@ -91,10 +92,12 @@ def cache_value_setter(request) -> str:
 
 
 def create_work_flow_token(phone: str) -> str:
-    work_flow_token = caches["work_flow"].set(phone)
-    if not work_flow_token:
-        work_flow_token = generate_work_flow_token(phone)
-    return work_flow_token
+    jti = caches["work_flow"].get(phone)
+
+    if not jti:
+        jti = jti_maker()
+        _ = generate_work_flow_token(phone, jti)
+    return jti
 
 
 def save_work_flow_token_in_cache(phone: str, token: str) -> None:
