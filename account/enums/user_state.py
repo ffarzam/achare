@@ -13,3 +13,4 @@ class UserSituation(Enum):
     NO_PASSWORD_FOUND = 9
     DELETED_ACCOUNT = 10
     ACCOUNT_DELETED = 11
+    INVALID_WORK_FLOW = 12
