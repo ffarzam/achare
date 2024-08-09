@@ -149,7 +149,7 @@ class UserUpdate(UpdateAPIView):
         IsPasswordSet,
     )
     serializer_class = UserUpdateSerializer
-    http_method_names = ["patch"]
+    http_method_names = ["put"]
 
     def get_object(self):
         user = self.request.user
