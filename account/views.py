@@ -56,7 +56,8 @@ class CheckUserPhone(CustomAPIView):
         user = User.default_objects.filter(phone=phone).values(
             "is_active", "password", "is_deleted"
         )
-
+        send_opt = False
+        response = None
         if user.exists():
             user_obj = user.get()
             add_request_to_throttle(request, self)
@@ -67,7 +68,8 @@ class CheckUserPhone(CustomAPIView):
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-            elif not user_obj.get("password"):
+            elif not user_obj.get("password") and not user_obj.get("is_active"):
+                send_opt = True
                 response = Response(
                     {"message": [UserSituation.NO_PASSWORD_FOUND.value]},
                     status=status.HTTP_403_FORBIDDEN,
@@ -84,21 +86,26 @@ class CheckUserPhone(CustomAPIView):
                 )
 
         else:
+            send_opt = True
+
+        if send_opt:
             sms_provider_result, code = generate_otp_and_send(phone)
             if sms_provider_result:
                 save_otp_inside_cache(phone, code)
 
                 add_request_to_throttle(request, self)
                 add_request_to_throttle(request, self, phone)
-                response = Response(
-                    {"message": [UserSituation.REGISTER_REQUIRED.value]},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+                if not response:
+                    response = Response(
+                        {"message": [UserSituation.REGISTER_REQUIRED.value]},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
             else:
                 response = Response(
                     {"message": [FaultCode.SMS_PROVIDER_FAILURE.value]},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+
         return response
 
 
