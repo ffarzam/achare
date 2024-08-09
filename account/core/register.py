@@ -17,9 +17,9 @@ def is_otp_code_correct(main_code: str, user_input_code: str) -> bool:
 
 
 def create_user_and_set_work_flow_token(user_input_phone: str):
-    User.objects.get_or_create(phone=user_input_phone)
-    work_flow_token, jti = create_work_flow_token(user_input_phone)
-    save_work_flow_token_in_cache(user_input_phone, jti)
+    user, _ = User.objects.get_or_create(phone=user_input_phone)
+    work_flow_token, jti = create_work_flow_token(user.id)
+    save_work_flow_token_in_cache(user.id, jti)
     delete_otp_code_from_cache(user_input_phone)
     return work_flow_token
 
