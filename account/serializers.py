@@ -21,7 +21,13 @@ class CheckUserPhoneSerializer(PhoneSerializer):
 
 
 class PasswordSerializer(serializers.Serializer):
-    password = serializers.CharField(write_only=True, validators=[validate_password])
+    password = serializers.CharField(
+        write_only=True,
+        validators=[validate_password],
+        required=True,
+        allow_blank=False,
+        allow_null=False,
+    )
 
 
 class UserRegisterSerializer(IsValidMixin, PhoneSerializer):
@@ -55,6 +61,20 @@ class UserRegisterSerializer(IsValidMixin, PhoneSerializer):
 
 
 class UserUpdateSerializer(PasswordSerializer, serializers.ModelSerializer):
+
+    first_name = serializers.CharField(
+        allow_blank=False,
+        trim_whitespace=True,
+        allow_null=False,
+        required=True,
+    )
+    last_name = serializers.CharField(
+        allow_blank=False,
+        trim_whitespace=True,
+        allow_null=False,
+        required=True,
+    )
+
     class Meta:
         model = User
         fields = (
@@ -74,24 +94,16 @@ class UserUpdateSerializer(PasswordSerializer, serializers.ModelSerializer):
         return value.strip()
 
     def update(self, instance, validated_data):
-        instance.set_password(validated_data["password"])
-        instance.first_name = validated_data["first_name"]
-        instance.last_name = validated_data["last_name"]
+        instance = super().update(instance, validated_data)
         instance.is_active = True
-
         instance.save()
-        delete_work_flow_token(instance.phone)
         # here a celery task can be run to delete work flow token in order to invoke it
+        delete_work_flow_token(instance.id)
         return instance
 
 
 class UserLoginSerializer(IsValidMixin, PhoneSerializer, PasswordSerializer):
-    class Meta:
-        model = User
-        fields = (
-            "phone",
-            "password",
-        )
+    pass
 
 
 class JTISerializer(serializers.Serializer):
