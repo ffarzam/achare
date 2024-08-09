@@ -91,17 +91,22 @@ def cache_value_setter(request) -> str:
     return request.META.get("HTTP_USER_AGENT", "UNKNOWN")
 
 
-def create_work_flow_token(phone: str) -> str:
-    jti = caches["work_flow"].get(phone)
+def check_if_work_flow_token_exists(phone):
+    return caches["work_flow"].get(phone)
 
-    if not jti:
-        jti = jti_maker()
-        _ = generate_work_flow_token(phone, jti)
-    return jti
+
+def create_work_flow_token(phone: str) -> Tuple[str, str]:
+    jti = jti_maker()
+    work_flow_token = generate_work_flow_token(phone, jti)
+    return work_flow_token, jti
 
 
 def save_work_flow_token_in_cache(phone: str, token: str) -> None:
     caches["work_flow"].set(phone, token, settings.REDIS_WORK_FLOW_TTL)
+
+
+def delete_work_flow_token(phone: str) -> None:
+    caches["work_flow"].delete(phone)
 
 
 def delete_all_sessions(user_id: int) -> None:
