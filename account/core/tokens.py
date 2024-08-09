@@ -50,10 +50,10 @@ def generate_refresh_token(user_id: int, jti: str) -> str:
     return refresh_token
 
 
-def generate_work_flow_token(phone: str, jti: str) -> str:
+def generate_work_flow_token(user_id: int, jti: str) -> str:
     work_flow_token_payload = {
         "token_type": "work_flow",
-        "phone": phone,
+        "user_id": user_id,
         "exp": datetime.datetime.utcnow()
         + datetime.timedelta(seconds=settings.REDIS_WORK_FLOW_TTL),
         "iat": datetime.datetime.utcnow(),
@@ -95,9 +95,9 @@ def check_if_work_flow_token_exists(phone):
     return caches["work_flow"].get(phone)
 
 
-def create_work_flow_token(phone: str) -> Tuple[str, str]:
+def create_work_flow_token(user_id: int) -> Tuple[str, str]:
     jti = jti_maker()
-    work_flow_token = generate_work_flow_token(phone, jti)
+    work_flow_token = generate_work_flow_token(user_id, jti)
     return work_flow_token, jti
 
 
