@@ -14,3 +14,4 @@ class UserSituation(Enum):
     DELETED_ACCOUNT = 10
     ACCOUNT_DELETED = 11
     INVALID_WORK_FLOW = 12
+    INVALID_SESSION = 13
