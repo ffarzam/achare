@@ -1,6 +1,7 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
+from account.core.tokens import delete_work_flow_token
 from account.mixins import IsValidMixin
 from account.models import User
 from account.utils import JTI_REGEX, PHONE_REGEX
@@ -33,27 +34,24 @@ class UserRegisterSerializer(IsValidMixin, PhoneSerializer):
     )
 
     def validate_phone(self, value):
-        user = User.default_objects.filter(phone=value).values("is_deleted")
-        if user.exists():
-            is_deleted_account = user.get().get("is_deleted")
-            if is_deleted_account:
-                raise serializers.ValidationError("Deleted Account!")
-            else:
-                raise serializers.ValidationError("Account Already Exists")
+        user = (
+            User.default_objects.filter(phone=value)
+            .values("is_deleted", "is_active", "password")
+            .first()
+        )
+        if user and user.get("is_deleted"):
+            raise serializers.ValidationError("Deleted Account!")
+        elif user and user.get("password") and not user.get("is_active"):
+            raise serializers.ValidationError("Your Account Is Not Active Exists!")
+        elif user and user.get("password") and user.get("is_active"):
+            raise serializers.ValidationError("Account Already Exists!")
+
         return value
 
     def validate_code(self, value):
         if not value.isdigit():
             raise serializers.ValidationError("Invalid OTP")
         return value
-
-    class Meta:
-        model = User
-        fields = (
-            "phone",
-            "code",
-        )
-        read_only_fields = ("code",)
 
 
 class UserUpdateSerializer(PasswordSerializer, serializers.ModelSerializer):
@@ -82,6 +80,7 @@ class UserUpdateSerializer(PasswordSerializer, serializers.ModelSerializer):
         instance.is_active = True
 
         instance.save()
+        delete_work_flow_token(instance.phone)
         # here a celery task can be run to delete work flow token in order to invoke it
         return instance
 
