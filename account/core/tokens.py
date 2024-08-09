@@ -99,3 +99,7 @@ def create_work_flow_token(phone: str) -> str:
 
 def save_work_flow_token_in_cache(phone: str, token: str) -> None:
     caches["work_flow"].set(phone, token, settings.REDIS_WORK_FLOW_TTL)
+
+
+def delete_all_sessions(user_id: int) -> None:
+    caches["auth"].delete_many(caches["auth"].keys(f"user_{user_id} || *"))
