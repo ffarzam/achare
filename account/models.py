@@ -44,9 +44,7 @@ class SoftDeleteBaseModel(models.Model):
 
 class User(AbstractUser, SoftDeleteBaseModel):
     username = None
-    phone = models.CharField(
-        validators=[phone_number_regex], unique=True, db_index=True
-    )
+    phone = models.CharField(validators=[phone_number_regex], unique=True)
     is_active = models.BooleanField("active", default=False)
 
     EMAIL_FIELD = "email"
