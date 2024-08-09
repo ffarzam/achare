@@ -1,6 +1,6 @@
 from django.core.cache import caches
 from rest_framework import exceptions, status
-from rest_framework.generics import UpdateAPIView
+from rest_framework.generics import UpdateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -23,7 +23,11 @@ from account.core.register import (
     get_main_code_from_cache,
     is_otp_code_correct,
 )
-from account.core.tokens import cache_key_parser, create_login_token
+from account.core.tokens import (
+    cache_key_parser,
+    create_login_token,
+    delete_all_sessions,
+)
 from account.custom_view import CustomAPIView
 from account.enums.fault_code import FaultCode
 from account.enums.user_state import UserSituation
@@ -249,8 +253,7 @@ class LogoutAll(APIView):
 
     def get(self, request):
         user = request.user
-        caches["auth"].delete_many(caches["auth"].keys(f"user_{user.id} || *"))
-
+        delete_all_sessions(user.id)
         return Response(
             {"message": UserSituation.LOGOUT_ALL_ACCOUNTS.value},
             status=status.HTTP_200_OK,
@@ -277,4 +280,24 @@ class SelectedLogout(APIView):
         return Response(
             {"message": UserSituation.LOGOUT_CHOSEN_ACCOUNT.value},
             status=status.HTTP_200_OK,
+        )
+
+
+class DeleteAccount(DestroyAPIView):
+    authentication_classes = (RefreshTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ["delete"]
+
+    def get_object(self):
+        user = self.request.user
+        self.check_object_permissions(self.request, user)
+        return user
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        delete_all_sessions(instance.id)
+        return Response(
+            data={"message": UserSituation.ACCOUNT_DELETED.value},
+            status=status.HTTP_204_NO_CONTENT,
         )
