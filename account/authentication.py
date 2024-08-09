@@ -89,9 +89,9 @@ class WorkFlowTokenAuthentication(AbstractTokenAuthentication):
 
     @staticmethod
     def validate_jti_token(payload):
-        phone = payload.get("phone")
+        user_id = payload.get("user_id")
         payload_jti = payload.get("jti")
-        cache_jti = caches["work_flow"].get(phone)
+        cache_jti = caches["work_flow"].get(user_id)
         if not cache_jti or not payload_jti:
             return None
         if cache_jti != payload_jti:
