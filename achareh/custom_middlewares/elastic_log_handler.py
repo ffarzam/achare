@@ -44,7 +44,7 @@ class ElasticAPILoggerMiddleware:
     @staticmethod
     def find_user(request):
         user = None
-        if request.user.is_authenticated:
+        if request.user and request.user.is_authenticated:
             user = request.user
         return user
 
