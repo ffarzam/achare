@@ -25,6 +25,7 @@ from account.core.tokens import (
     cache_key_parser,
     create_login_token,
     delete_all_sessions,
+    check_if_work_flow_token_exists,
 )
 from account.custom_view import CustomAPIView
 from account.enums.fault_code import FaultCode
@@ -122,6 +123,12 @@ class UserRegister(CustomAPIView):
             )
 
         if is_otp_code_correct(main_code, user_input_code):
+            if check_if_work_flow_token_exists(user_input_code):
+                return Response(
+                    {"message": [UserSituation.INVALID_WORK_FLOW.value]},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
             work_flow_token = create_user_and_set_work_flow_token(user_input_phone)
             data = {"work_flow_token": work_flow_token}
             return Response({"message": data}, status=status.HTTP_201_CREATED)
