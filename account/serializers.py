@@ -32,6 +32,16 @@ class UserRegisterSerializer(IsValidMixin, PhoneSerializer):
         min_length=6,
     )
 
+    def validate_phone(self, value):
+        user = User.default_objects.filter(phone=value).values("is_deleted")
+        if user.exists():
+            is_deleted_account = user.get().get("is_deleted")
+            if is_deleted_account:
+                raise serializers.ValidationError("Deleted Account!")
+            else:
+                raise serializers.ValidationError("Account Already Exists")
+        return value
+
     def validate_code(self, value):
         if not value.isdigit():
             raise serializers.ValidationError("Invalid OTP")
