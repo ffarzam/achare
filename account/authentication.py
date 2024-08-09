@@ -3,7 +3,6 @@ from abc import ABC
 import jwt
 from django.contrib.auth.backends import ModelBackend
 from django.core.cache import caches
-from rest_framework import exceptions
 from rest_framework.authentication import TokenAuthentication
 
 from account.core.tokens import decode_jwt
@@ -86,7 +85,7 @@ class WorkFlowTokenAuthentication(AbstractTokenAuthentication):
     def validate_jti_token(payload):
         phone = payload.get("phone")
         payload_jti = payload.get("jti")
-        cache_jti = caches["auth"].keys(phone)
+        cache_jti = caches["work_flow"].get(phone)
         if cache_jti != payload_jti:
             return None
         return True
