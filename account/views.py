@@ -282,7 +282,12 @@ class SelectedLogout(APIView):
         jti = serializer.validated_data["jti"]
         user = request.user
 
-        caches["auth"].delete(f"user_{user.id} || {jti}")
+        is_deleted = caches["auth"].delete(f"user_{user.id} || {jti}")
+        if not is_deleted:
+            return Response(
+                {"message": UserSituation.INVALID_SESSION.value},
+                status=status.HTTP_200_OK,
+            )
 
         return Response(
             {"message": UserSituation.LOGOUT_CHOSEN_ACCOUNT.value},
