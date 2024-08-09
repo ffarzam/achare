@@ -57,5 +57,8 @@ class User(AbstractUser, SoftDeleteBaseModel):
 class RecycleUser(User):
     deleted_object = BaseUserManager()
 
+    def delete(self, using=None, keep_parents=False):
+        models.Model.delete(self)
+
     class Meta:
         proxy = True
