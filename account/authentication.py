@@ -45,6 +45,8 @@ class AccessTokenAuthentication(AbstractTokenAuthentication):
         except jwt.ExpiredSignatureError:
             raise custom_exception.ExpiredAccessTokenError
 
+        if payload.get("token_type") != "access":
+            return None, None
         if not self.validate_jti_token(payload):
             return None, None
 
@@ -60,6 +62,8 @@ class RefreshTokenAuthentication(AbstractTokenAuthentication):
         except jwt.ExpiredSignatureError:
             raise custom_exception.ExpiredRefreshTokenError
 
+        if payload.get("token_type") != "refresh":
+            return None, None
         if not self.validate_jti_token(payload):
             return None, None
 
@@ -75,6 +79,8 @@ class WorkFlowTokenAuthentication(AbstractTokenAuthentication):
         except jwt.ExpiredSignatureError:
             raise custom_exception.ExpiredWorkFlowTokenError
 
+        if payload.get("token_type") != "work_flow":
+            return None, None
         if not self.validate_jti_token(payload):
             return None, None
         user = self.get_user_from_payload(payload)
@@ -86,6 +92,8 @@ class WorkFlowTokenAuthentication(AbstractTokenAuthentication):
         phone = payload.get("phone")
         payload_jti = payload.get("jti")
         cache_jti = caches["work_flow"].get(phone)
+        if not cache_jti or not payload_jti:
+            return None
         if cache_jti != payload_jti:
             return None
         return True
