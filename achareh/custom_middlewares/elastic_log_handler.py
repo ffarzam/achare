@@ -50,7 +50,6 @@ class ElasticAPILoggerMiddleware:
 
     @staticmethod
     def api_log_data(request, response, user):
-        print(get_ip_from_request(request))
         return {
             "unique_id": request.unique_id,
             "request_method": request.method,
