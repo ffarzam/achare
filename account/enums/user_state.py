@@ -11,3 +11,4 @@ class UserSituation(Enum):
     LOGOUT_ALL_ACCOUNTS = 7
     INACTIVE_USER = 8
     NO_PASSWORD_FOUND = 9
+    DELETED_ACCOUNT = 10
